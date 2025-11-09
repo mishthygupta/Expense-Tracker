@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">Edit Category</h2>
+
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div class="mb-3">
+            <label for="name" class="form-label">Category Name</label>
+            <input type="text" name="name" class="form-control" id="name"
+                   value="{{ category.name if category else '' }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="description" class="form-label">Description (optional)</label>
+            <textarea name="description" class="form-control" id="description" rows="3">{{ category.description if category else '' }}</textarea>
+        </div>
+
+        <div class="mb-3">
+            <label for="budget" class="form-label">Budget (optional)</label>
+            <input type="number" name="budget" class="form-control" id="budget"
+                   value="{{ category.budget if category else '' }}" step="0.01" min="0">
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-success">Update Category</button>
+            <a href="{{ url_for('categories_page') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

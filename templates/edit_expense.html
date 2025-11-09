@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">{{ 'Edit' if expense else 'Add' }} Expense</h2>
+
+    <form method="POST" action="{{ url_for('edit_expense_page', id=expense.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-3">
+            <label for="title" class="form-label">Expense Title</label>
+            <input type="text" name="title" id="title" class="form-control"
+                   value="{{ expense.title if expense else '' }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="amount" class="form-label">Amount</label>
+            <input type="number" name="amount" id="amount" class="form-control"
+                   value="{{ expense.amount if expense else '' }}" step="0.01" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="date" class="form-label">Date</label>
+            <input type="date" name="date" id="date" class="form-control"
+                   value="{{ expense.date if expense else '' }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="category_id" class="form-label">Select Category</label>
+            <select name="category_id" id="category_id" class="form-control" required>
+                <option value="" disabled {% if not expense %}selected{% endif %}>Select Category</option>
+                {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if expense and expense.category_id == cat.id %}selected{% endif %}>
+                        {{ cat.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-success">Save</button>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

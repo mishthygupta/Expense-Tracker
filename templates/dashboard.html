@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Expense & Budget Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --dark-gradient: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            --light-bg: #f8fafc;
+            --card-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            --hover-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* Header part */
+        .header-section {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .welcome-text {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .action-buttons {
+            margin-bottom: 2rem;
+        }
+
+        .btn-custom {
+            background: white;
+            border: none;
+            border-radius: 50px;
+            padding: 0.75rem 1.5rem;
+            margin: 0.25rem;
+            font-weight: 600;
+            color: #667eea;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            color: #667eea;
+        }
+
+        .btn-logout {
+            background: var(--warning-gradient);
+            color: white !important;
+        }
+
+        .btn-logout:hover {
+            color: white !important;
+        }
+
+
+        .dashboard-card {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--card-shadow);
+            border: none;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dashboard-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary-gradient);
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .stats-overview {
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            height: 100%;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .stat-card.income::before {
+            background: var(--success-gradient);
+        }
+
+        .stat-card.expense::before {
+            background: var(--warning-gradient);
+        }
+
+        .stat-card.savings::before {
+            background: var(--info-gradient);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            opacity: 0.7;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 500;
+        }
+
+        .income .stat-value, .income .stat-icon { color: #11998e; }
+        .expense .stat-value, .expense .stat-icon { color: #f5576c; }
+        .savings .stat-value, .savings .stat-icon { color: #4facfe; }
+
+        /* Income Editor Styles */
+        .income-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .income-display {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .income-display:hover {
+            background: rgba(17, 153, 142, 0.1);
+        }
+
+        .income-edit-container {
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .income-edit-container.active {
+            display: flex;
+        }
+
+        .income-input {
+            border: 2px solid #11998e;
+            border-radius: 8px;
+            padding: 0.5rem;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #11998e;
+            background: rgba(17, 153, 142, 0.05);
+            width: 150px;
+            text-align: center;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .income-input:focus {
+            border-color: #0d7377;
+            background: rgba(17, 153, 142, 0.1);
+            transform: scale(1.02);
+        }
+
+        .income-action-btn {
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .income-save-btn {
+            background: var(--success-gradient);
+            color: white;
+        }
+
+        .income-save-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.3);
+        }
+
+        .income-cancel-btn {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .income-cancel-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+        }
+
+        .income-edit-btn {
+            background: rgba(17, 153, 142, 0.2);
+            color: #11998e;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+        }
+
+        .income-edit-btn:hover {
+            background: rgba(17, 153, 142, 0.3);
+            transform: scale(1.1);
+        }
+
+        .income-loading {
+            display: none;
+            color: #11998e;
+            animation: spin 1s linear infinite;
+        }
+
+
+        .chart-card {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+
+        .chart-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+
+        /* Transactions Table wth all transacs */
+        .transactions-card {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s ease;
+        }
+
+        .transactions-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        /* Transaction Filters */
+        .transaction-filters {
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .filter-input {
+            border: 2px solid rgba(102, 126, 234, 0.2);
+            border-radius: 8px;
+            padding: 0.5rem 0.75rem;
+            outline: none;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .filter-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .filter-btn {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .filter-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .clear-filter-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .clear-filter-btn:hover {
+            background: #5a6268;
+            transform: translateY(-1px);
+        }
+
+        .filter-summary {
+            font-size: 0.9rem;
+            color: #667eea;
+            font-weight: 500;
+            margin-top: 1rem;
+            padding: 0.5rem;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 6px;
+            display: none;
+        }
+
+        .filter-summary.active {
+            display: block;
+        }
+
+        .table-responsive {
+            border-radius: 1rem;
+            overflow: hidden;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .table {
+            margin: 0;
+            border-radius: 1rem;
+        }
+
+        .table thead th {
+            background: var(--light-bg);
+            border: none;
+            padding: 1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .table tbody td {
+            border: none;
+            padding: 1rem;
+            vertical-align: middle;
+        }
+
+        .table tbody tr {
+            border-bottom: 1px solid #f1f3f4;
+            transition: all 0.3s ease;
+        }
+
+        .table tbody tr:hover {
+            background-color: #f8f9fa;
+            transform: scale(1.001);
+        }
+
+        /* Pagination */
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 8px;
+        }
+
+        .pagination-info {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .pagination-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            background: white;
+            color: #667eea;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        /* edit and delete Buttons in Table */
+        .action-btn {
+            font-size: 0.8rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            margin: 0.1rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .edit-btn {
+            background: var(--success-gradient);
+            color: white;
+        }
+
+        .edit-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.3);
+        }
+
+        .delete-btn {
+            background: var(--warning-gradient);
+            color: white;
+        }
+
+        .delete-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(245, 87, 108, 0.3);
+        }
+
+        /* Suggestions on botton of page*/
+        .suggestions-card {
+            background: var(--dark-gradient);
+            color: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--card-shadow);
+        }
+
+        .suggestions-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .suggestion-item {
+            background: rgba(255,255,255,0.1);
+            border-radius: 0.8rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .suggestion-item:hover {
+            background: rgba(255,255,255,0.15);
+            transform: scale(1.02);
+        }
+
+        /* No transactions message */
+        .no-transactions {
+            text-align: center;
+            padding: 3rem;
+            color: #6c757d;
+        }
+
+        .no-transactions i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Responsive Design(stole from claude, learn later?) */
+        @media (max-width: 768px) {
+            .welcome-text {
+                font-size: 1.8rem;
+            }
+            
+            .chart-container {
+                height: 200px;
+            }
+            
+            .stat-value {
+                font-size: 1.5rem;
+            }
+            
+            .btn-custom {
+                padding: 0.6rem 1rem;
+                margin: 0.2rem;
+                font-size: 0.9rem;
+            }
+
+            .income-input {
+                width: 120px;
+                font-size: 1rem;
+            }
+
+            .filter-group {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.5rem;
+            }
+
+            .pagination-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Fade in animation */
+        .fade-in {
+            animation: fadeIn 0.8s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Success animation (claude thingy)*/
+        .success-pulse {
+            animation: successPulse 0.6s ease-in-out;
+        }
+
+        @keyframes successPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); background: rgba(17, 153, 142, 0.2); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Section -->
+    <div class="header-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="welcome-text">
+                        <i class="bi bi-wallet2"></i>
+                        Welcome back, <span id="username">Loading...</span>!
+                    </h1>
+                    <p class="subtitle">Here's your financial overview for today</p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <div class="d-flex flex-wrap justify-content-md-end justify-content-center gap-2">
+                        <button class="btn-custom btn-logout" onclick="logout()">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        
+        <div id="loadingState" class="loading">
+            <div class="spinner"></div>
+            <p class="text-muted">Loading your dashboard...</p>
+        </div>
+
+        <!-- Main Dashboard stuff -->
+        <div id="dashboardContent" style="display: none;">
+            
+            <div class="action-buttons text-center fade-in">
+                <a href="/add" class="btn-custom">
+                    <i class="bi bi-plus-circle"></i> Add Expense
+                </a>
+                <a href="/add_category" class="btn-custom">
+                    <i class="bi bi-tags"></i> Add Category
+                </a>
+                <a href="/reports" class="btn-custom">
+                    <i class="bi bi-graph-up"></i> View Reports
+                </a>
+                <a href="/api/export_csv" class="btn-custom" download>
+                    <i class="bi bi-download"></i> Export CSV
+                </a>
+            </div>
+
+            <!-- Stats part -->
+            <div class="row stats-overview">
+                <div class="col-md-4 mb-3">
+                    <div class="stat-card income fade-in">
+                        <div class="stat-icon">
+                            <i class="bi bi-arrow-down-circle"></i>
+                        </div>
+                        <div class="stat-value">
+                            <div class="income-container">
+                                ₹
+                                <!-- Income Display Mode -->
+                                <div class="income-display" id="incomeDisplay">
+                                    <span id="totalIncome">0</span>
+                                    <button class="income-edit-btn" title="Click to edit income">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                </div>
+                                
+                                <!-- Income Editable (fixed the js blackbox part) -->
+                                <div class="income-edit-container" id="incomeEditContainer">
+                                    <input type="number" 
+                                           id="incomeInput" 
+                                           class="income-input" 
+                                           placeholder="Enter income"
+                                           min="0"
+                                           step="0.01">
+                                    <button class="income-action-btn income-save-btn" onclick="saveIncome()" title="Save">
+                                        <i class="bi bi-check"></i>
+                                    </button>
+                                    <button class="income-action-btn income-cancel-btn" onclick="cancelIncomeEdit()" title="Cancel">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                    <div class="income-loading" id="incomeLoading">
+                                        <i class="bi bi-arrow-repeat"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stat-label">Monthly Income</div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="stat-card expense fade-in">
+                        <div class="stat-icon">
+                            <i class="bi bi-arrow-up-circle"></i>
+                        </div>
+                        <div class="stat-value">₹<span id="totalExpenses">0</span></div>
+                        <div class="stat-label">Total Expenses</div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="stat-card savings fade-in">
+                        <div class="stat-icon">
+                            <i class="bi bi-piggy-bank"></i>
+                        </div>
+                        <div class="stat-value">₹<span id="savings">0</span></div>
+                        <div class="stat-label">Net Savings</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row (check if theres anything to change here, later)-->
+            <div class="row">
+                <div class="col-lg-6 mb-4">
+                    <div class="chart-card fade-in">
+                        <h3 class="chart-title">
+                            <i class="bi bi-pie-chart text-primary"></i>
+                            Category Breakdown
+                        </h3>
+                        <div class="chart-container">
+                            <canvas id="pieChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 mb-4">
+                    <div class="chart-card fade-in">
+                        <h3 class="chart-title">
+                            <i class="bi bi-bar-chart text-success"></i>
+                            Monthly Trends
+                        </h3>
+                        <div class="chart-container">
+                            <canvas id="barChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- All Transactions with Filters -->
+            <div class="transactions-card fade-in">
+                <h3 class="chart-title">
+                    <i class="bi bi-list-ul text-info"></i>
+                    All Transactions
+                    <span class="badge bg-primary ms-2" id="transactionCount">0</span>
+                </h3>
+                
+                <div class="transaction-filters">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="filter-group">
+                                <label for="dateFrom" class="form-label mb-0"><strong>From:</strong></label>
+                                <input type="date" id="dateFrom" class="filter-input form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="filter-group">
+                                <label for="dateTo" class="form-label mb-0"><strong>To:</strong></label>
+                                <input type="date" id="dateTo" class="filter-input form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="filter-group">
+                                <label for="categoryFilter" class="form-label mb-0"><strong>Category:</strong></label>
+                                <select id="categoryFilter" class="filter-input form-select">
+                                    <option value="">All Categories</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="filter-group">
+                                <label class="form-label mb-0"><strong>Actions:</strong></label>
+                                <div class="d-flex gap-2">
+                                    <button class="filter-btn" onclick="applyFilters()">
+                                        <i class="bi bi-funnel"></i> Filter
+                                    </button>
+                                    <button class="clear-filter-btn" onclick="clearFilters()">
+                                        <i class="bi bi-x-circle"></i> Clear
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Date Filters (complete the yt tutorial later to see if you missed anything)-->
+                    <div class="row mt-2">
+                        <div class="col-12">
+                            <div class="d-flex flex-wrap gap-2">
+                                <small class="text-muted me-2">Quick filters:</small>
+                                <button class="btn btn-sm btn-outline-primary" onclick="setQuickFilter('today')">Today</button>
+                                <button class="btn btn-sm btn-outline-primary" onclick="setQuickFilter('week')">This Week</button>
+                                <button class="btn btn-sm btn-outline-primary" onclick="setQuickFilter('month')">This Month</button>
+                                <button class="btn btn-sm btn-outline-primary" onclick="setQuickFilter('year')">This Year</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-summary" id="filterSummary"></div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th><i class="bi bi-calendar3"></i> Date</th>
+                                <th><i class="bi bi-tag"></i> Category</th>
+                                <th><i class="bi bi-currency-rupee"></i> Amount</th>
+                                <th><i class="bi bi-file-text"></i> Description</th>
+                                <th><i class="bi bi-gear"></i> Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactions">
+                            <!-- Transactions will be populated here? -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Page dividing thing -->
+                <div class="pagination-container" id="paginationContainer" style="display: none;">
+                    <div class="pagination-info" id="paginationInfo"></div>
+                    <div class="pagination-controls" id="paginationControls"></div>
+                </div>
+            </div>
+
+            <!-- Suggestions -->
+            <div class="suggestions-card fade-in">
+                <h3 class="suggestions-title">
+                    <i class="bi bi-lightbulb"></i>
+                    Smart Insights & Suggestions
+                </h3>
+                <div id="suggestions">
+                    <!-- Suggestions will be populated here(this works) -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentIncome = 0;
+        let isEditingIncome = false;
+        let allTransactions = [];
+        let filteredTransactions = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
+
+        async function fetchData() {
+            try {
+                const response = await fetch('/api/dashboard', { method: 'GET', credentials: 'include' });
+                if (!response.ok) {
+                    window.location.href = '/login';
+                    return;
+                }
+
+                const data = await response.json();
+
+                // Update user info
+                document.getElementById('username').textContent = data.username;
+                currentIncome = data.income || 0;
+                document.getElementById('totalIncome').textContent = currentIncome.toFixed(2);
+                document.getElementById('totalExpenses').textContent = data.monthly_total.toFixed(2);
+                
+                const savings = currentIncome - data.monthly_total;
+                document.getElementById('savings').textContent = savings.toFixed(2);
+                
+                const savingsCard = document.querySelector('.savings');
+                if (savings < 0) {
+                    savingsCard.classList.add('negative');
+                    savingsCard.querySelector('.stat-value').style.color = '#f5576c';
+                    savingsCard.querySelector('.stat-icon').style.color = '#f5576c';
+                }
+
+                allTransactions = data.expenses.sort((a, b) => new Date(b.date) - new Date(a.date));
+                filteredTransactions = [...allTransactions];
+
+                // charts
+                createPieChart(data);
+                createBarChart(data);
+                
+                updateTransactions();
+                populateCategoryFilter(data.categories);
+                updateSuggestions(data.suggestions);
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('dashboardContent').style.display = 'block';
+
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                document.getElementById('loadingState').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Failed to load dashboard. Please refresh the page.
+                    </div>
+                `;
+            }
+        }
+
+        // Income editing parttttt, works now, no more changes needed
+        function enableIncomeEdit() {
+            if (isEditingIncome) return;
+            
+            isEditingIncome = true;
+            const display = document.getElementById('incomeDisplay');
+            const editContainer = document.getElementById('incomeEditContainer');
+            const input = document.getElementById('incomeInput');
+            
+            display.style.display = 'none';
+            editContainer.classList.add('active');
+            input.value = currentIncome;
+            input.focus();
+            input.select();
+        }
+
+        function cancelIncomeEdit() {
+            isEditingIncome = false;
+            const display = document.getElementById('incomeDisplay');
+            const editContainer = document.getElementById('incomeEditContainer');
+            
+            display.style.display = 'flex';
+            editContainer.classList.remove('active');
+        }
+
+        async function saveIncome() {
+            const input = document.getElementById('incomeInput');
+            const loading = document.getElementById('incomeLoading');
+            const newIncome = parseFloat(input.value);
+            
+            if (isNaN(newIncome) || newIncome < 0) {
+                input.style.borderColor = '#e74c3c';
+                input.focus();
+                return;
+            }
+
+            loading.style.display = 'block';
+            input.disabled = true;
+
+            try {
+                const response = await fetch('/api/user/income', {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ income: newIncome }),
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentIncome = newIncome;
+                    document.getElementById('totalIncome').textContent = currentIncome.toFixed(2);
+                    
+                    // savings calculation
+                    const expenses = parseFloat(document.getElementById('totalExpenses').textContent);
+                    const savings = currentIncome - expenses;
+                    document.getElementById('savings').textContent = savings.toFixed(2);
+                    
+                    const incomeCard = document.querySelector('.stat-card.income');
+                    incomeCard.classList.add('success-pulse');
+                    setTimeout(() => {
+                        incomeCard.classList.remove('success-pulse');
+                    }, 600);
+                    
+                    cancelIncomeEdit();
+                } else {
+                    throw new Error(data.error || 'Failed to update income');
+                }
+            } catch (error) {
+                console.error('Error updating income:', error);
+                input.style.borderColor = '#e74c3c';
+                alert('Failed to update income. Please try again.');
+            } finally {
+                loading.style.display = 'none';
+                input.disabled = false;
+            }
+        }
+
+    
+        function populateCategoryFilter(categories) {
+            const categoryFilter = document.getElementById('categoryFilter');
+            categoryFilter.innerHTML = '<option value="">All Categories</option>';
+            
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                categoryFilter.appendChild(option);
+            });
+        }
+
+        function setQuickFilter(period) {
+            const dateFrom = document.getElementById('dateFrom');
+            const dateTo = document.getElementById('dateTo');
+            const today = new Date();
+            
+            // Clear category filter
+            document.getElementById('categoryFilter').value = '';
+            
+            switch (period) {
+                case 'today':
+                    const todayStr = today.toISOString().split('T')[0];
+                    dateFrom.value = todayStr;
+                    dateTo.value = todayStr;
+                    break;
+                    
+                case 'week':
+                    const weekStart = new Date(today);
+                    weekStart.setDate(today.getDate() - today.getDay());
+                    const weekEnd = new Date(weekStart);
+                    weekEnd.setDate(weekStart.getDate() + 6);
+                    dateFrom.value = weekStart.toISOString().split('T')[0];
+                    dateTo.value = weekEnd.toISOString().split('T')[0];
+                    break;
+                    
+                case 'month':
+                    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+                    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                    dateFrom.value = monthStart.toISOString().split('T')[0];
+                    dateTo.value = monthEnd.toISOString().split('T')[0];
+                    break;
+                    
+                case 'year':
+                    const yearStart = new Date(today.getFullYear(), 0, 1);
+                    const yearEnd = new Date(today.getFullYear(), 11, 31);
+                    dateFrom.value = yearStart.toISOString().split('T')[0];
+                    dateTo.value = yearEnd.toISOString().split('T')[0];
+                    break;
+            }
+            
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            
+            filteredTransactions = allTransactions.filter(transaction => {
+                // Date filter
+                if (dateFrom && transaction.date < dateFrom) return false;
+                if (dateTo && transaction.date > dateTo) return false;
+                
+                
+                if (categoryFilter && transaction.category !== categoryFilter) return false;
+                
+                return true;
+            });
+            
+            currentPage = 1;
+            updateTransactions();
+            updateFilterSummary(dateFrom, dateTo, categoryFilter);
+        }
+
+        function clearFilters() {
+            document.getElementById('dateFrom').value = '';
+            document.getElementById('dateTo').value = '';
+            document.getElementById('categoryFilter').value = '';
+            
+            filteredTransactions = [...allTransactions];
+            currentPage = 1;
+            updateTransactions();
+            
+            const filterSummary = document.getElementById('filterSummary');
+            filterSummary.classList.remove('active');
+        }
+
+        function updateFilterSummary(dateFrom, dateTo, category) {
+            const filterSummary = document.getElementById('filterSummary');
+            const hasFilters = dateFrom || dateTo || category;
+            
+            if (hasFilters) {
+                let summaryText = 'Active filters: ';
+                const filters = [];
+                
+                if (dateFrom && dateTo) {
+                    if (dateFrom === dateTo) {
+                        filters.push(`Date: ${formatDate(dateFrom)}`);
+                    } else {
+                        filters.push(`Date: ${formatDate(dateFrom)} to ${formatDate(dateTo)}`);
+                    }
+                } else if (dateFrom) {
+                    filters.push(`From: ${formatDate(dateFrom)}`);
+                } else if (dateTo) {
+                    filters.push(`Until: ${formatDate(dateTo)}`);
+                }
+                
+                if (category) {
+                    filters.push(`Category: ${category}`);
+                }
+                
+                summaryText += filters.join(', ');
+                summaryText += ` • Showing ${filteredTransactions.length} of ${allTransactions.length} transactions`;
+                
+                filterSummary.textContent = summaryText;
+                filterSummary.classList.add('active');
+            } else {
+                filterSummary.classList.remove('active');
+            }
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+
+        function updatePagination() {
+            const totalItems = filteredTransactions.length;
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            const startItem = (currentPage - 1) * itemsPerPage + 1;
+            const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+            
+            const paginationContainer = document.getElementById('paginationContainer');
+            const paginationInfo = document.getElementById('paginationInfo');
+            const paginationControls = document.getElementById('paginationControls');
+            
+            if (totalItems === 0) {
+                paginationContainer.style.display = 'none';
+                return;
+            }
+            
+            paginationContainer.style.display = 'flex';
+            
+            paginationInfo.textContent = `Showing ${startItem}-${endItem} of ${totalItems} transactions`;
+            
+            paginationControls.innerHTML = '';
+            
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'pagination-btn';
+            prevBtn.innerHTML = '<i class="bi bi-chevron-left"></i> Previous';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => changePage(currentPage - 1);
+            paginationControls.appendChild(prevBtn);
+            
+            // Page numbers
+            const startPage = Math.max(1, currentPage - 2);
+            const endPage = Math.min(totalPages, startPage + 4);
+            
+            for (let i = startPage; i <= endPage; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
+                pageBtn.textContent = i;
+                pageBtn.onclick = () => changePage(i);
+                paginationControls.appendChild(pageBtn);
+            }
+            
+            // Next button(not sure if it works, dont need it rn)
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'pagination-btn';
+            nextBtn.innerHTML = 'Next <i class="bi bi-chevron-right"></i>';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => changePage(currentPage + 1);
+            paginationControls.appendChild(nextBtn);
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            updateTransactions();
+        }
+
+        function updateTransactions() {
+            const tbody = document.getElementById('transactions');
+            const transactionCount = document.getElementById('transactionCount');
+            
+            // transactions
+            transactionCount.textContent = filteredTransactions.length;
+            
+            tbody.innerHTML = '';
+            
+            if (filteredTransactions.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="no-transactions">
+                            <i class="bi bi-inbox"></i>
+                            <div>No transactions found</div>
+                            <small>Try adjusting your filters or add some expenses</small>
+                        </td>
+                    </tr>
+                `;
+                updatePagination();
+                return;
+            }
+            
+            // Calculation part of the page thing in recent transactions
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const currentTransactions = filteredTransactions.slice(startIndex, endIndex);
+            
+            currentTransactions.forEach(transaction => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${formatDate(transaction.date)}</strong></td>
+                    <td>
+                        <span class="badge" style="background: linear-gradient(45deg, #667eea, #764ba2); color: white;">
+                            ${transaction.category || 'Uncategorized'}
+                        </span>
+                    </td>
+                    <td><strong>₹${parseFloat(transaction.amount).toFixed(2)}</strong></td>
+                    <td>${transaction.title}</td>
+                    <td>
+                        <button class="action-btn edit-btn" onclick="window.location.href='/edit_expense/${transaction.id}'" title="Edit Expense">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="action-btn delete-btn" onclick="deleteExpense(${transaction.id})" title="Delete Expense">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            updatePagination();
+        }
+
+        function createPieChart(data) {
+            const ctx = document.getElementById('pieChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.categories || [],
+                    datasets: [{
+                        data: data.totals || [],
+                        backgroundColor: [
+                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+                            '#FF9F40', '#FF6384', '#4BC0C0', '#36A2EB', '#FFCE56'
+                        ],
+                        borderWidth: 0,
+                        cutout: '60%'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createBarChart(data) {
+            const ctx = document.getElementById('barChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.trend_labels || [],
+                    datasets: [{
+                        label: 'Monthly Expenses',
+                        data: data.monthly_trends || [],
+                        backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                        borderColor: '#667eea',
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + value.toLocaleString();
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateSuggestions(suggestions) {
+            const container = document.getElementById('suggestions');
+            container.innerHTML = '';
+            
+            if (!suggestions || suggestions.length === 0) {
+                container.innerHTML = `
+                    <div class="suggestion-item">
+                        <i class="bi bi-info-circle me-2"></i>
+                        No specific suggestions at the moment. Keep tracking your expenses!
+                    </div>
+                `;
+                return;
+            }
+
+            suggestions.forEach(suggestion => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.innerHTML = `
+                    <i class="bi bi-lightbulb-fill me-2"></i>
+                    ${suggestion}
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        async function logout() {
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                const response = await fetch('/logout', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    window.location.href = '/login';
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    alert('Logout failed: ' + (errorData.error || response.statusText));
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+                alert('Logout failed. Please try again.');
+            }
+        }
+
+        async function deleteExpense(id) {
+            if (!confirm('Are you sure you want to delete this expense?')) return;
+
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                const response = await fetch(`/api/expenses/${id}`, {
+                    method: 'DELETE',
+                    credentials: 'include',
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    }
+                });
+
+                if (!response.ok) {
+                    const data = await response.json().catch(() => ({}));
+                    alert('Failed to delete expense: ' + (data.error || response.statusText));
+                    return;
+                }
+
+                alert('Expense deleted successfully');
+                fetchData();
+            } catch (error) {
+                console.error('Delete failed:', error);
+                alert('Could not delete expense.');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const incomeDisplay = document.getElementById('incomeDisplay');
+            incomeDisplay.addEventListener('click', enableIncomeEdit);
+
+            const incomeInput = document.getElementById('incomeInput');
+            incomeInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    saveIncome();
+                } else if (e.key === 'Escape') {
+                    cancelIncomeEdit();
+                }
+            });
+
+            incomeInput.addEventListener('input', function() {
+                this.style.borderColor = '#11998e';
+            });
+
+            const dateFrom = document.getElementById('dateFrom');
+            const dateTo = document.getElementById('dateTo');
+            const categoryFilter = document.getElementById('categoryFilter');
+
+            dateFrom.addEventListener('change', applyFilters);
+            dateTo.addEventListener('change', applyFilters);
+            categoryFilter.addEventListener('change', applyFilters);
+
+            fetchData();
+        });
+    </script>
+</body>
+</html>

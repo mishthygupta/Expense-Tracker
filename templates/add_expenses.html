@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card p-4">
+        <h2 class="text-center mb-4">{{ 'Edit Expense' if expense else 'Add New Expense' }}</h2>
+        <form method="POST" action="{{ url_for('add_expense_page') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="title" class="form-label">Title</label>
+                    <input type="text" id="title" name="title"
+                           value="{{ expense.title if expense else '' }}"
+                           class="form-control" placeholder="E.g., Grocery shopping" required>
+                </div>
+
+                <div class="col-md-6">
+                    <label for="amount" class="form-label">Amount (₹)</label>
+                    <input type="number" id="amount" name="amount" step="0.01" min="0"
+                           value="{{ expense.amount if expense else '' }}"
+                           class="form-control" placeholder="0.00" required>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="date" class="form-label">Date</label>
+                    <input type="date" id="date" name="date"
+                           value="{{ expense.date if expense else '' }}"
+                           class="form-control" required>
+                </div>
+
+                <div class="col-md-6">
+                    <label for="category_id" class="form-label">Category</label>
+                    <select id="category_id" name="category_id" class="form-select" required>
+                        <option value="">Select a category</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat.id }}"
+                                    {% if expense and expense.category_id == cat.id %}selected{% endif %}>
+                                {{ cat.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <button type="submit" class="btn btn-success px-4">
+                    {{ 'Update Expense' if expense else 'Add Expense' }}
+                </button>
+                <a href="{{ url_for('dashboard') }}" class="text-decoration-none text-primary fw-medium">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

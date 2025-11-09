@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Reports | Expense & Budget Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --dark-gradient: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .hero-section {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 3rem;
+            border-radius: 0 0 2rem 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .hero-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .hero-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+
+        .stats-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            border: none;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stats-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary-gradient);
+        }
+
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+            border: none;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: var(--success-gradient);
+        }
+
+        .chart-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.12);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 350px;
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        .chart-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            background: white;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .stat-item.income::before {
+            background: var(--success-gradient);
+        }
+
+        .stat-item.expense::before {
+            background: var(--warning-gradient);
+        }
+
+        .stat-item.savings::before {
+            background: var(--info-gradient);
+        }
+
+        .stat-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 500;
+        }
+
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            opacity: 0.7;
+        }
+
+        .income .stat-value { color: #11998e; }
+        .expense .stat-value { color: #f5576c; }
+        .savings .stat-value { color: #4facfe; }
+
+        .income .stat-icon { color: #11998e; }
+        .expense .stat-icon { color: #f5576c; }
+        .savings .stat-icon { color: #4facfe; }
+
+        .btn-gradient {
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: 50px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+
+        .btn-outline-gradient {
+            background: transparent;
+            border: 2px solid;
+            border-image: var(--primary-gradient) 1;
+            border-radius: 50px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            color: #667eea;
+        }
+
+        .btn-outline-gradient:hover {
+            background: var(--primary-gradient);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 3rem;
+        }
+
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            border-width: 0.3em;
+        }
+
+        .summary-section {
+            background: var(--dark-gradient);
+            color: white;
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            margin-top: 3rem;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+
+        .summary-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .insight-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .insight-card:hover {
+            background: rgba(255,255,255,0.15);
+            transform: scale(1.02);
+        }
+
+        .btn-success.btn-gradient {
+            background: var(--success-gradient);
+            color: white;
+        }
+
+        .btn-success.btn-gradient:hover {
+            background: var(--success-gradient);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(17, 153, 142, 0.4);
+        }
+
+        .export-loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .export-loading.show {
+            display: flex;
+        }
+
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2rem;
+            }
+            
+            .chart-container {
+                height: 250px;
+            }
+            
+            .stat-value {
+                font-size: 1.5rem;
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="hero-title">
+                        <i class="bi bi-graph-up"></i>
+                        Financial Reports
+                    </h1>
+                    <p class="hero-subtitle">Comprehensive insights into your spending patterns and financial health</p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <div class="d-flex flex-wrap justify-content-md-end gap-2">
+                        <button class="btn btn-light btn-gradient" onclick="window.location.href='/dashboard'">
+                            <i class="bi bi-arrow-left"></i> Dashboard
+                        </button>
+                        <button class="btn btn-success btn-gradient" onclick="exportToPDF()" title="Export Report as PDF">
+                            <i class="bi bi-download"></i> Export PDF
+                        </button>
+                        <button class="btn btn-outline-light btn-outline-gradient" onclick="logout()">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Export Loading Overlay -->
+        <div class="export-loading" id="exportLoading">
+            <div class="text-center">
+                <div class="spinner-border mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <div>Generating PDF Report...</div>
+            </div>
+        </div>
+
+        <div class="loading-spinner" id="loadingSpinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 text-muted">Loading your financial data...</p>
+        </div>
+
+        <div id="reportContent" style="display: none;">
+            <!-- Statistics Overview -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="stat-item income fade-in">
+                        <div class="stat-icon">
+                            <i class="bi bi-arrow-down-circle"></i>
+                        </div>
+                        <div class="stat-value" id="totalIncome">₹0</div>
+                        <div class="stat-label">Total Income</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-item expense fade-in">
+                        <div class="stat-icon">
+                            <i class="bi bi-arrow-up-circle"></i>
+                        </div>
+                        <div class="stat-value" id="totalExpenses">₹0</div>
+                        <div class="stat-label">Total Expenses</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-item savings fade-in">
+                        <div class="stat-icon">
+                            <i class="bi bi-piggy-bank"></i>
+                        </div>
+                        <div class="stat-value" id="totalSavings">₹0</div>
+                        <div class="stat-label">Net Savings</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row 1 -->
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="chart-card fade-in">
+                        <h3 class="chart-title">
+                            <i class="bi bi-graph-up-arrow text-primary"></i>
+                            Monthly Expense Trends
+                        </h3>
+                        <div class="chart-container">
+                            <canvas id="monthlyTrendsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="chart-card fade-in">
+                        <h3 class="chart-title">
+                            <i class="bi bi-pie-chart text-success"></i>
+                            Income vs Expenses
+                        </h3>
+                        <div class="chart-container">
+                            <canvas id="incomeExpenseChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row 2 -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="chart-card fade-in">
+                        <h3 class="chart-title">
+                            <i class="bi bi-bar-chart text-warning"></i>
+                            Category-wise Expense Breakdown
+                        </h3>
+                        <div class="chart-container">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="summary-section fade-in">
+                <h3 class="summary-title">
+                    <i class="bi bi-lightbulb"></i>
+                    Financial Insights
+                </h3>
+                <div id="insightsContainer">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadReports() {
+            document.getElementById('loadingSpinner').style.display = 'block';
+            
+            try {
+                const response = await fetch('/api/dashboard');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch data');
+                }
+                
+                const data = await response.json();
+
+                // Update statistics
+                const income = data.income || 0;
+                const expenses = data.monthly_total || 0;
+                const savings = income - expenses;
+
+                document.getElementById('totalIncome').textContent = `₹${income.toFixed(2)}`;
+                document.getElementById('totalExpenses').textContent = `₹${expenses.toFixed(2)}`;
+                document.getElementById('totalSavings').textContent = `₹${savings.toFixed(2)}`;
+
+                const savingsElement = document.querySelector('.savings .stat-value');
+                if (savings < 0) {
+                    savingsElement.style.color = '#f5576c';
+                } else {
+                    savingsElement.style.color = '#4facfe';
+                }
+
+                createMonthlyTrendsChart(data);
+                createCategoryChart(data);
+                createIncomeExpenseChart(data, income, expenses);
+                generateInsights(data, income, expenses, savings);
+
+                document.getElementById('loadingSpinner').style.display = 'none';
+                document.getElementById('reportContent').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error loading reports:', error);
+                document.getElementById('loadingSpinner').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Failed to load reports. Please try again.
+                    </div>
+                `;
+            }
+        }
+
+        function createMonthlyTrendsChart(data) {
+            new Chart(document.getElementById('monthlyTrendsChart'), {
+                type: 'line',
+                data: {
+                    labels: data.trend_labels || [],
+                    datasets: [{
+                        label: 'Monthly Expenses',
+                        data: data.monthly_trends || [],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointBackgroundColor: '#667eea',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + value.toLocaleString();
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createCategoryChart(data) {
+            const colors = [
+                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+                '#FF9F40', '#FF6384', '#4BC0C0', '#36A2EB', '#FFCE56'
+            ];
+
+            new Chart(document.getElementById('categoryChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.categories || [],
+                    datasets: [{
+                        label: 'Expenses by Category',
+                        data: data.totals || [],
+                        backgroundColor: colors.slice(0, (data.categories || []).length),
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + value.toLocaleString();
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createIncomeExpenseChart(data, income, expenses) {
+            new Chart(document.getElementById('incomeExpenseChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Income', 'Expenses'],
+                    datasets: [{
+                        data: [income, expenses],
+                        backgroundColor: ['#11998e', '#f5576c'],
+                        borderWidth: 0,
+                        cutout: '70%'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function generateInsights(data, income, expenses, savings) {
+            const container = document.getElementById('insightsContainer');
+            const insights = [];
+
+            
+            const savingsRate = income > 0 ? ((savings / income) * 100) : 0;
+            if (savingsRate > 20) {
+                insights.push({
+                    icon: 'bi-trophy',
+                    text: `Excellent! You're saving ${savingsRate.toFixed(1)}% of your income. Keep up the great work!`,
+                    type: 'success'
+                });
+            } else if (savingsRate > 10) {
+                insights.push({
+                    icon: 'bi-thumbs-up',
+                    text: `Good job! You're saving ${savingsRate.toFixed(1)}% of your income. Consider increasing it to 20%+.`,
+                    type: 'info'
+                });
+            } else if (savingsRate > 0) {
+                insights.push({
+                    icon: 'bi-exclamation-triangle',
+                    text: `You're saving ${savingsRate.toFixed(1)}% of your income. Try to increase your savings rate to at least 10%.`,
+                    type: 'warning'
+                });
+            } else {
+                insights.push({
+                    icon: 'bi-exclamation-circle',
+                    text: `You're spending more than you earn. Consider reviewing your expenses and creating a budget.`,
+                    type: 'danger'
+                });
+            }
+
+            // Category
+            if (data.categories && data.totals) {
+                const maxCategoryIndex = data.totals.indexOf(Math.max(...data.totals));
+                const maxCategory = data.categories[maxCategoryIndex];
+                const maxAmount = data.totals[maxCategoryIndex];
+                
+                if (maxAmount > 0) {
+                    const percentage = expenses > 0 ? ((maxAmount / expenses) * 100) : 0;
+                    insights.push({
+                        icon: 'bi-pie-chart',
+                        text: `Your highest spending category is "${maxCategory}" at ₹${maxAmount.toFixed(2)} (${percentage.toFixed(1)}% of total expenses).`,
+                        type: 'info'
+                    });
+                }
+            }
+
+            // Monthly trend
+            if (data.monthly_trends && data.monthly_trends.length >= 2) {
+                const lastMonth = data.monthly_trends[data.monthly_trends.length - 1];
+                const previousMonth = data.monthly_trends[data.monthly_trends.length - 2];
+                const change = lastMonth - previousMonth;
+                const changePercentage = previousMonth > 0 ? ((change / previousMonth) * 100) : 0;
+
+                if (Math.abs(changePercentage) > 10) {
+                    const trend = change > 0 ? 'increased' : 'decreased';
+                    const icon = change > 0 ? 'bi-trending-up' : 'bi-trending-down';
+                    const type = change > 0 ? 'warning' : 'success';
+                    
+                    insights.push({
+                        icon: icon,
+                        text: `Your expenses have ${trend} by ${Math.abs(changePercentage).toFixed(1)}% compared to last month.`,
+                        type: type
+                    });
+                }
+            }
+
+            container.innerHTML = insights.map(insight => `
+                <div class="insight-card">
+                    <i class="${insight.icon} me-2"></i>
+                    ${insight.text}
+                </div>
+            `).join('');
+        }
+
+        async function logout() {
+            try {
+                const response = await fetch('/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    window.location.href = '/login';
+                } else {
+                    alert('Logout failed. Please try again.');
+                }
+            } catch (err) {
+                console.error('Logout error:', err);
+                alert('Logout failed. Please try again.');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadReports);
+
+        async function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            
+            document.getElementById('exportLoading').classList.add('show');
+            
+            try {
+                // the pdf looks weird and i dont understand why, fix that later
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4',
+                    compress: true
+                });
+                
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                const margin = 15;
+                const contentWidth = pageWidth - 2 * margin;
+                let yPosition = margin;
+
+                function checkPageBreak(requiredSpace) {
+                    if (yPosition + requiredSpace > pageHeight - 20) {
+                        pdf.addPage();
+                        yPosition = margin;
+                        return true;
+                    }
+                    return false;
+                }
+
+                function drawColoredHeader(color, height = 3) {
+                    pdf.setFillColor(...color);
+                    pdf.rect(margin, yPosition, contentWidth, height, 'F');
+                    yPosition += height + 5;
+                }
+
+                pdf.setFillColor(102, 126, 234);
+                pdf.rect(0, 0, pageWidth, 40, 'F');
+                
+                pdf.setTextColor(255, 255, 255);
+                pdf.setFontSize(28);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text('FINANCIAL REPORT', margin, 25);
+                
+                pdf.setFontSize(12);
+                pdf.setFont('helvetica', 'normal');
+                const currentDate = new Date().toLocaleDateString('en-IN', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                pdf.text(`Generated on ${currentDate}`, margin, 35);
+                
+                yPosition = 50;
+
+                const response = await fetch('/api/dashboard');
+                const data = await response.json();
+                
+                const income = data.income || 0;
+                const expenses = data.monthly_total || 0;
+                const savings = income - expenses;
+                const savingsRate = income > 0 ? ((savings / income) * 100) : 0;
+
+                // Executive Summary Box
+                pdf.setTextColor(0, 0, 0);
+                pdf.setFillColor(248, 249, 250);
+                pdf.rect(margin, yPosition, contentWidth, 35, 'F');
+                pdf.setDrawColor(102, 126, 234);
+                pdf.setLineWidth(0.5);
+                pdf.rect(margin, yPosition, contentWidth, 35, 'S');
+                
+                pdf.setFontSize(16);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text('EXECUTIVE SUMMARY', margin + 5, yPosition + 8);
+                
+                pdf.setFontSize(11);
+                pdf.setFont('helvetica', 'normal');
+                pdf.text(`Monthly Income: ₹${income.toLocaleString()}`, margin + 5, yPosition + 16);
+                pdf.text(`Monthly Expenses: ₹${expenses.toLocaleString()}`, margin + 5, yPosition + 22);
+                
+                if (savings >= 0) {
+                    pdf.setTextColor(17, 153, 142);
+                } else {
+                    pdf.setTextColor(245, 87, 108);
+                }
+                pdf.text(`Net Savings: ₹${savings.toLocaleString()} (${savingsRate.toFixed(1)}%)`, margin + 5, yPosition + 28);
+                
+                yPosition += 45;
+
+                checkPageBreak(20);
+                pdf.setTextColor(0, 0, 0);
+                drawColoredHeader([17, 153, 142]);
+                
+                pdf.setFontSize(18);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text('DETAILED BREAKDOWN', margin, yPosition);
+                yPosition += 15;
+
+                pdf.setFontSize(14);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(17, 153, 142);
+                pdf.text(' INCOME ANALYSIS', margin, yPosition);
+                yPosition += 8;
+
+                pdf.setFontSize(11);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setTextColor(0, 0, 0);
+                
+                if (income > 0) {
+                    pdf.text(`• Total Monthly Income: ₹${income.toLocaleString()}`, margin + 5, yPosition);
+                    yPosition += 6;
+                    pdf.text(`• Annual Projected Income: ₹${(income * 12).toLocaleString()}`, margin + 5, yPosition);
+                    yPosition += 6;
+                    if (savingsRate > 0) {
+                        pdf.text(`• Savings Rate: ${savingsRate.toFixed(1)}% (${savingsRate > 20 ? 'Excellent' : savingsRate > 10 ? 'Good' : 'Needs Improvement'})`, margin + 5, yPosition);
+                        yPosition += 6;
+                    }
+                } else {
+                    pdf.text('• No income data available. Please set your income in the dashboard.', margin + 5, yPosition);
+                    yPosition += 6;
+                }
+                yPosition += 5;
+
+                // Expense Analysis(has issues)
+                checkPageBreak(25);
+                pdf.setFontSize(14);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(245, 87, 108);
+                pdf.text(' EXPENSE ANALYSIS', margin, yPosition);
+                yPosition += 8;
+
+                pdf.setFontSize(11);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setTextColor(0, 0, 0);
+                
+                if (expenses > 0) {
+                    pdf.text(`• Total Monthly Expenses: ₹${expenses.toLocaleString()}`, margin + 5, yPosition);
+                    yPosition += 6;
+                    pdf.text(`• Annual Projected Expenses: ₹${(expenses * 12).toLocaleString()}`, margin + 5, yPosition);
+                    yPosition += 6;
+                    if (income > 0) {
+                        const expenseRatio = (expenses / income) * 100;
+                        pdf.text(`• Expense Ratio: ${expenseRatio.toFixed(1)}% of income`, margin + 5, yPosition);
+                        yPosition += 6;
+                    }
+                } else {
+                    pdf.text('• No expense data available for the current month.', margin + 5, yPosition);
+                    yPosition += 6;
+                }
+                yPosition += 5;
+
+
+                if (data.categories && data.categories.length > 0) {
+                    checkPageBreak(30);
+                    drawColoredHeader([255, 193, 7]);
+                    
+                    pdf.setFontSize(18);
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.setTextColor(0, 0, 0);
+                    pdf.text('CATEGORY BREAKDOWN', margin, yPosition);
+                    yPosition += 15;
+
+                    pdf.setFontSize(12);
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.text('Category', margin + 5, yPosition);
+                    pdf.text('Amount', margin + 80, yPosition);
+                    pdf.text('% of Total', margin + 130, yPosition);
+                    yPosition += 8;
+
+                    pdf.setDrawColor(200, 200, 200);
+                    pdf.line(margin, yPosition - 2, margin + contentWidth, yPosition - 2);
+                    yPosition += 3;
+
+                    pdf.setFontSize(11);
+                    pdf.setFont('helvetica', 'normal');
+                    
+                    // Sort categories by amount (descending)
+                    const categoryData = data.categories.map((cat, index) => ({
+                        name: cat,
+                        amount: data.totals[index] || 0
+                    })).sort((a, b) => b.amount - a.amount);
+
+                    categoryData.forEach((cat, index) => {
+                        checkPageBreak(8);
+                        
+                        const percentage = expenses > 0 ? ((cat.amount / expenses) * 100) : 0;
+                        
+                        if (index % 2 === 0) {
+                            pdf.setFillColor(248, 249, 250);
+                            pdf.rect(margin, yPosition - 4, contentWidth, 6, 'F');
+                        }
+                        
+                        pdf.setTextColor(0, 0, 0);
+                        pdf.text(cat.name.length > 20 ? cat.name.substring(0, 20) + '...' : cat.name, margin + 5, yPosition);
+                        pdf.text(`₹${cat.amount.toLocaleString()}`, margin + 80, yPosition);
+                        pdf.text(`${percentage.toFixed(1)}%`, margin + 130, yPosition);
+                        yPosition += 7;
+                    });
+                    yPosition += 10;
+                }
+
+                // Monthly Trends
+                if (data.trend_labels && data.monthly_trends && data.monthly_trends.length > 0) {
+                    checkPageBreak(30);
+                    drawColoredHeader([79, 172, 254]);
+                    
+                    pdf.setFontSize(18);
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.setTextColor(0, 0, 0);
+                    pdf.text('MONTHLY TRENDS', margin, yPosition);
+                    yPosition += 15;
+
+                    pdf.setFontSize(12);
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.text('Month', margin + 5, yPosition);
+                    pdf.text('Expenses', margin + 60, yPosition);
+                    pdf.text('Change', margin + 120, yPosition);
+                    yPosition += 8;
+
+                    pdf.setDrawColor(200, 200, 200);
+                    pdf.line(margin, yPosition - 2, margin + contentWidth, yPosition - 2);
+                    yPosition += 3;
+
+                    pdf.setFontSize(11);
+                    pdf.setFont('helvetica', 'normal');
+                    
+                    data.trend_labels.forEach((month, index) => {
+                        checkPageBreak(8);
+                        
+                        const amount = data.monthly_trends[index] || 0;
+                        const prevAmount = index > 0 ? (data.monthly_trends[index - 1] || 0) : 0;
+                        const change = index > 0 ? amount - prevAmount : 0;
+                        const changePercent = prevAmount > 0 ? ((change / prevAmount) * 100) : 0;
+                        
+                        
+                        if (index % 2 === 0) {
+                            pdf.setFillColor(248, 249, 250);
+                            pdf.rect(margin, yPosition - 4, contentWidth, 6, 'F');
+                        }
+                        
+                        pdf.setTextColor(0, 0, 0);
+                        pdf.text(month, margin + 5, yPosition);
+                        pdf.text(`₹${amount.toLocaleString()}`, margin + 60, yPosition);
+                        
+                        if (index > 0) {
+                            if (change > 0) {
+                                pdf.setTextColor(245, 87, 108);
+                                pdf.text(`↑ ${Math.abs(changePercent).toFixed(1)}%`, margin + 120, yPosition);
+                            } else if (change < 0) {
+                                pdf.setTextColor(17, 153, 142);
+                                pdf.text(`↓ ${Math.abs(changePercent).toFixed(1)}%`, margin + 120, yPosition);
+                            } else {
+                                pdf.setTextColor(108, 117, 125);
+                                pdf.text('No change', margin + 120, yPosition);
+                            }
+                        } else {
+                            pdf.setTextColor(108, 117, 125);
+                            pdf.text('-', margin + 120, yPosition);
+                        }
+                        
+                        yPosition += 7;
+                    });
+                    yPosition += 10;
+                }
+
+                checkPageBreak(30);
+                drawColoredHeader([156, 102, 234]);
+                
+                pdf.setFontSize(18);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(0, 0, 0);
+                pdf.text('FINANCIAL INSIGHTS & RECOMMENDATIONS', margin, yPosition);
+                yPosition += 15;
+
+                const insights = generatePDFInsights(data, income, expenses, savings);
+                
+                pdf.setFontSize(11);
+                pdf.setFont('helvetica', 'normal');
+                
+                insights.forEach((insight, index) => {
+                    checkPageBreak(15);
+                    
+                    let icon = 'INFO: ';
+                    if (insight.includes('Excellent') || insight.includes('Great')) icon = 'SUCCESS: ';
+                    else if (insight.includes('Good')) icon = 'GOOD: ';
+                    else if (insight.includes('Warning') || insight.includes('high')) icon = 'CAUTION: ';
+                    else if (insight.includes('spending more') || insight.includes('deficit')) icon = 'URGENT: ';
+                    
+                    pdf.setFillColor(index % 2 === 0 ? 248 : 253, 249, 250);
+                    pdf.rect(margin, yPosition - 3, contentWidth, 12, 'F');
+                    pdf.setDrawColor(220, 220, 220);
+                    pdf.rect(margin, yPosition - 3, contentWidth, 12, 'S');
+                    
+                    
+                    const wrappedText = pdf.splitTextToSize(`${icon} ${insight}`, contentWidth - 10);
+                    pdf.text(wrappedText, margin + 5, yPosition + 2);
+                    yPosition += Math.max(12, wrappedText.length * 5 + 2);
+                });
+
+                // summary box at the end
+                checkPageBreak(25);
+                yPosition += 10;
+                
+                pdf.setFillColor(44, 62, 80);
+                pdf.rect(margin, yPosition, contentWidth, 20, 'F');
+                
+                pdf.setTextColor(255, 255, 255);
+                pdf.setFontSize(14);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text('SUMMARY', margin + 5, yPosition + 8);
+                
+                pdf.setFontSize(10);
+                pdf.setFont('helvetica', 'normal');
+                let summaryText = `Income: ₹${income.toLocaleString()} | Expenses: ₹${expenses.toLocaleString()} | Savings: ₹${savings.toLocaleString()}`;
+                if (savingsRate >= 0) {
+                    summaryText += ` | Savings Rate: ${savingsRate.toFixed(1)}%`;
+                }
+                pdf.text(summaryText, margin + 5, yPosition + 15);
+
+                // footer to all pages
+                const totalPages = pdf.internal.getNumberOfPages();
+                for (let i = 1; i <= totalPages; i++) {
+                    pdf.setPage(i);
+                    
+                    pdf.setFillColor(248, 249, 250);
+                    pdf.rect(0, pageHeight - 15, pageWidth, 15, 'F');
+                    
+                    pdf.setFontSize(9);
+                    pdf.setTextColor(108, 117, 125);
+                    pdf.text(`Expense & Budget Tracker | Page ${i} of ${totalPages}`, margin, pageHeight - 8);
+                    pdf.text(`Report generated on ${currentDate}`, pageWidth - margin - 50, pageHeight - 8);
+                }
+
+                // Generate filename with current date and time
+                const now = new Date();
+                const filename = `Financial_Report_${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}.pdf`;
+                
+                // Save the PDF
+                pdf.save(filename);
+                
+                document.getElementById('exportLoading').classList.remove('show');
+                
+                
+                setTimeout(() => {
+                    alert(' PDF report generated successfully!');
+                }, 500);
+                
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                document.getElementById('exportLoading').classList.remove('show');
+                alert(' Failed to generate PDF report.\n\nError: ' + error.message + '\n\nPlease try again or contact support if the issue persists.');
+            }
+        }
+
+        function generatePDFInsights(data, income, expenses, savings) {
+            const insights = [];
+
+            const savingsRate = income > 0 ? ((savings / income) * 100) : 0;
+            
+            if (income === 0) {
+                insights.push('No income data available. Please set your monthly income to get personalized insights.');
+            } else if (savingsRate > 30) {
+                insights.push(`Excellent financial discipline! You're saving ${savingsRate.toFixed(1)}% of your income, which is well above the recommended 20%. Consider investing your surplus savings for long-term wealth building.`);
+            } else if (savingsRate > 20) {
+                insights.push(`Great job! You're saving ${savingsRate.toFixed(1)}% of your income, meeting the recommended savings rate. This puts you on track for strong financial security.`);
+            } else if (savingsRate > 10) {
+                insights.push(`Good progress! You're saving ${savingsRate.toFixed(1)}% of your income. Consider increasing this to 20% for optimal financial health by reviewing your expense categories.`);
+            } else if (savingsRate > 0) {
+                insights.push(`Your savings rate of ${savingsRate.toFixed(1)}% is a good start, but aim for at least 10-20% of your income. Look for areas to reduce expenses or increase income.`);
+            } else {
+                insights.push(`You're currently spending more than you earn, creating a deficit of ₹${Math.abs(savings).toLocaleString()}. This requires immediate attention to avoid debt accumulation.`);
+            }
+
+            if (data.categories && data.totals && data.categories.length > 0) {
+                const totalExpenses = data.totals.reduce((sum, amount) => sum + amount, 0);
+                const maxCategoryIndex = data.totals.indexOf(Math.max(...data.totals));
+                const maxCategory = data.categories[maxCategoryIndex];
+                const maxAmount = data.totals[maxCategoryIndex];
+                const maxPercentage = totalExpenses > 0 ? ((maxAmount / totalExpenses) * 100) : 0;
+                
+                if (maxPercentage > 50) {
+                    insights.push(`Your "${maxCategory}" category represents ${maxPercentage.toFixed(1)}% of total expenses (₹${maxAmount.toLocaleString()}). This high concentration suggests reviewing this category for potential savings.`);
+                } else if (maxPercentage > 30) {
+                    insights.push(`"${maxCategory}" is your largest expense category at ${maxPercentage.toFixed(1)}% of total spending (₹${maxAmount.toLocaleString()}). Monitor this category closely for optimization opportunities.`);
+                } else {
+                    insights.push(`Your expenses are well-distributed across categories, with "${maxCategory}" being the highest at ${maxPercentage.toFixed(1)}% (₹${maxAmount.toLocaleString()}). This indicates good spending balance.`);
+                }
+
+                const highCategories = data.categories.filter((cat, index) => {
+                    const percentage = totalExpenses > 0 ? ((data.totals[index] / totalExpenses) * 100) : 0;
+                    return percentage > 25;
+                });
+
+                if (highCategories.length > 1) {
+                    insights.push(`Multiple categories (${highCategories.join(', ')}) show high spending. Consider setting budgets for these categories to maintain better control.`);
+                }
+            }
+
+            // Monthly trend analysis
+            if (data.monthly_trends && data.monthly_trends.length >= 3) {
+                const trends = data.monthly_trends.slice(-3); // Last 3 months
+                const avgGrowth = trends.length > 1 ? 
+                    trends.slice(1).reduce((sum, val, idx) => {
+                        const prev = trends[idx];
+                        return sum + (prev > 0 ? ((val - prev) / prev) * 100 : 0);
+                    }, 0) / (trends.length - 1) : 0;
+
+                if (avgGrowth > 15) {
+                    insights.push(`Your expenses have been increasing at an average rate of ${avgGrowth.toFixed(1)}% per month over the last 3 months. This trend needs immediate attention to prevent budget overruns.`);
+                } else if (avgGrowth > 5) {
+                    insights.push(`Your monthly expenses are growing at ${avgGrowth.toFixed(1)}% per month. While manageable, monitor this trend to ensure it doesn't accelerate.`);
+                } else if (avgGrowth < -5) {
+                    insights.push(`Excellent! Your expenses have been decreasing by an average of ${Math.abs(avgGrowth).toFixed(1)}% per month. This improvement in spending control is commendable.`);
+                } else {
+                    insights.push(`Your monthly expenses have remained relatively stable with ${Math.abs(avgGrowth).toFixed(1)}% average change. This consistency is good for budget planning.`);
+                }
+            }
+
+            if (income > 0) {
+                if (income < 30000) {
+                    insights.push('Focus on building an emergency fund of 3-6 months of expenses. Even small, consistent savings of ₹1,000-2,000 per month can make a significant difference.');
+                } else if (income < 75000) {
+                    insights.push('Consider the 50/30/20 rule: 50% for needs, 30% for wants, and 20% for savings and debt repayment. Your income level allows for strategic financial planning.');
+                } else {
+                    insights.push('With your higher income level, focus on tax-efficient investments, retirement planning, and wealth building strategies beyond basic savings.');
+                }
+            }
+
+            if (expenses > 0) {
+                insights.push('Key recommendations: Set category-wise budgets, track daily expenses, review and cut unnecessary subscriptions, and automate savings transfers.');
+            }
+
+            return insights;
+        }
+    </script>
+</body>
+</html>
